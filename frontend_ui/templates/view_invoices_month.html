@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Invoices by Month</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Dashboard</a></li>
+        <li><a href="/upload_invoice.html">Upload</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>View Invoices by Month</h2>
+
+    <form id="filter-form">
+      <label for="month">Month:</label>
+      <input type="text" id="month" name="month" required />
+      <label for="year">Year:</label>
+      <input type="text" id="year" name="year" required />
+      <button type="submit">Fetch Invoices</button>
+    </form>
+
+    <div id="invoice-container" class="invoice-list"></div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "/login";
+    }
+
+    const form = document.getElementById("filter-form");
+    const container = document.getElementById("invoice-container");
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      const month = document.getElementById("month").value;
+      const year = document.getElementById("year").value;
+
+      fetch(`http://localhost:5000/invoice/view_invoices_by_month?month=${month}&year=${year}`, {
+        method: "GET",
+        headers: {
+          "Authorization": "Bearer " + token
+        }
+      })
+      .then(res => res.text())
+      .then(html => {
+        container.innerHTML = html;
+      })
+      .catch(error => {
+        console.error("Failed to fetch invoices:", error);
+        container.innerHTML = "<p style='color: red;'>Failed to load invoices.</p>";
+      });
+    });
+
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

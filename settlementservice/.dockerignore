@@ -1,0 +1,18 @@
+# Bytecode files
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.env/
+
+# Local databases or test files
+*.sqlite
+*.db
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Settlement History</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Dashboard</a></li>
+        <li><a href="/balances.html">Balances</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Settlement History</h2>
+    <table class="table" border="1">
+      <thead>
+        <tr>
+          <th>Paid By</th>
+          <th>Owed By</th>
+          <th>Amount (€)</th>
+          <th>Method</th>
+          <th>Note</th>
+          <th>Timestamp</th>
+        </tr>
+      </thead>
+      <tbody id="log-table-body">
+        <tr><td colspan="6">Loading...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "/login";
+
+    fetch("http://localhost:5000/settlement/settlement_log", {
+      headers: { "Authorization": "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("log-table-body");
+      tbody.innerHTML = "";
+
+      if (data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6'>No settlement records found.</td></tr>";
+        return;
+      }
+
+      data.forEach(log => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${log.paid_by}</td>
+          <td>${log.owed_by}</td>
+          <td>${log.amount.toFixed(2)}</td>
+          <td>${log.method || "-"}</td>
+          <td>${log.note || "-"}</td>
+          <td>${new Date(log.timestamp).toLocaleString()}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    })
+    .catch(err => {
+      console.error("Error loading settlement log:", err);
+      document.getElementById("log-table-body").innerHTML = "<tr><td colspan='6'>Failed to load settlement history.</td></tr>";
+    });
+
+    document.getElementById("logout-link").addEventListener("click", e => {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

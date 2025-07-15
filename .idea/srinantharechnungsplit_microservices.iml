@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="PYTHON_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/authservice" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/balanceservice" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/frontend_ui" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/gateway" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/invoiceservice" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/settlementservice" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/splitservice" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/.venv" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PyNamespacePackagesService">
+    <option name="namespacePackageFolders">
+      <list>
+        <option value="$MODULE_DIR$/splitservice/routes" />
+      </list>
+    </option>
+  </component>
+</module>

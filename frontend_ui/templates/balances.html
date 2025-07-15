@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Balances</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Dashboard</a></li>
+        <li><a href="/view_invoices_month.html">My Invoices</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Balance Summary</h2>
+
+    <section>
+      <h3>You Owe</h3>
+      <ul id="you-owe-list"></ul>
+    </section>
+
+    <section>
+      <h3>You Are Owed</h3>
+      <ul id="you-are-owed-list"></ul>
+    </section>
+
+    <section>
+      <h3>Net Balance</h3>
+      <p id="net-balance" style="font-weight: bold;"></p>
+    </section>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!token || !user) {
+      window.location.href = "/login";
+    }
+
+    fetch("http://localhost:5000/balance/api/balances", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const oweList = document.getElementById("you-owe-list");
+      const owedList = document.getElementById("you-are-owed-list");
+      const netEl = document.getElementById("net-balance");
+
+      let totalOwe = 0;
+      let totalOwed = 0;
+
+      data.you_owe.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `To ${entry.to_name} (${entry.to}): €${entry.amount.toFixed(2)}`;
+        oweList.appendChild(li);
+        totalOwe += entry.amount;
+      });
+
+      data.you_are_owed.forEach(entry => {
+        const li = document.createElement("li");
+        li.textContent = `From ${entry.from_name} (${entry.from}): €${entry.amount.toFixed(2)}`;
+        owedList.appendChild(li);
+        totalOwed += entry.amount;
+      });
+
+      const net = totalOwed - totalOwe;
+      netEl.textContent = (net >= 0 ? `You are owed €${net.toFixed(2)}` : `You owe €${Math.abs(net).toFixed(2)}`);
+      netEl.style.color = net >= 0 ? "green" : "red";
+    })
+    .catch(err => {
+      console.error("Failed to fetch balances:", err);
+      document.getElementById("net-balance").textContent = "Unable to load balances.";
+      document.getElementById("net-balance").style.color = "red";
+    });
+
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

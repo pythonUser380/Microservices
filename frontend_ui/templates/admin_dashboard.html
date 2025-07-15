@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+ <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+    h1, h2 { text-align: center; }
+    .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
+    button { padding: 8px 12px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+</style>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Home</a></li>
+        <li><a href="/admin_settlements.html">Settlements</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Admin Dashboard</h2>
+
+    <div class="dashboard-cards">
+      <div class="card">
+        <h3>Total Users</h3>
+        <p id="total-users">...</p>
+      </div>
+      <div class="card">
+        <h3>Total Invoices</h3>
+        <p id="total-invoices">...</p>
+      </div>
+      <div class="card">
+        <h3>Total Split Items</h3>
+        <p id="total-splits">...</p>
+      </div>
+      <div class="card">
+        <h3>Total Settled (€)</h3>
+        <p id="total-settled">...</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!token || !user || !user.is_admin) {
+      window.location.href = "/login";
+    }
+
+    const endpoints = {
+      users: "http://localhost:5000/admin/total_users",
+      invoices: "http://localhost:5000/admin/total_invoices",
+      splits: "http://localhost:5000/admin/total_splits",
+      settled: "http://localhost:5000/admin/total_settled"
+    };
+
+    const headers = { Authorization: "Bearer " + token };
+
+    const fetchAndDisplay = async (id, url) => {
+      try {
+        const res = await fetch(url, { headers });
+        const data = await res.json();
+        document.getElementById(id).textContent = data.count || data.total || "0";
+      } catch (err) {
+        console.error(`Failed to load ${id}:`, err);
+        document.getElementById(id).textContent = "Error";
+      }
+    };
+
+    fetchAndDisplay("total-users", endpoints.users);
+    fetchAndDisplay("total-invoices", endpoints.invoices);
+    fetchAndDisplay("total-splits", endpoints.splits);
+    fetchAndDisplay("total-settled", endpoints.settled);
+
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

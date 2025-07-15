@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Split Invoice</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Dashboard</a></li>
+        <li><a href="/view_invoices_month.html">My Invoices</a></li>
+        <li><a href="/balances.html">Balances</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Split Invoice Items</h2>
+    <form id="split-form">
+      <div id="item-list"></div>
+      <label for="paid_by">Who paid this bill?</label>
+      <select id="paid_by" name="paid_by" required></select>
+
+      <label>
+        <input type="checkbox" id="overwrite" name="overwrite" />
+        Overwrite previous split if exists
+      </label>
+
+      <button type="submit">Submit Split</button>
+    </form>
+
+    <p id="split-status" style="margin-top: 1em; font-weight: bold;"></p>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!token || !user) window.location.href = "/login";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const billId = urlParams.get("billId");
+    const paidBySelect = document.getElementById("paid_by");
+    const itemList = document.getElementById("item-list");
+
+    if (!billId) {
+      document.body.innerHTML = "<p>Missing billId</p>";
+      throw new Error("billId missing");
+    }
+
+    const fetchItems = async () => {
+      const res = await fetch(`http://localhost:5000/split/split_invoice?billId=${billId}`, {
+        headers: { Authorization: "Bearer " + token }
+      });
+      return res.json();
+    };
+
+    const fetchUsers = async () => {
+      const res = await fetch(`http://localhost:5000/split/my_split_users`, {
+        headers: { Authorization: "Bearer " + token }
+      });
+      return res.json();
+    };
+
+    Promise.all([fetchItems(), fetchUsers()]).then(([items, users]) => {
+      users.forEach(user => {
+        const opt = document.createElement("option");
+        opt.value = user.email;
+        opt.textContent = `${user.name} (${user.email})`;
+        paidBySelect.appendChild(opt);
+      });
+
+      items.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "split-item";
+        div.innerHTML = `
+          <p><strong>${item.item}</strong> - €${item.price}</p>
+          <label>Share with:</label>
+          <select multiple name="shared_with_${item.item}" class="shared-select">
+            ${users.map(u => `<option value="${u.email}">${u.name}</option>`).join("")}
+          </select>
+        `;
+        itemList.appendChild(div);
+      });
+    });
+
+    document.getElementById("split-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const paid_by = paidBySelect.value;
+      const overwrite = document.getElementById("overwrite").checked;
+      const items = [];
+
+      document.querySelectorAll(".split-item").forEach(div => {
+        const itemText = div.querySelector("p strong").textContent;
+        const selected = Array.from(div.querySelector("select").selectedOptions).map(opt => opt.value);
+        if (selected.length > 0) {
+          items.push({ item: itemText, shared_with: selected });
+        }
+      });
+
+      const payload = { billId, paid_by, items, overwrite };
+
+      fetch("http://localhost:5000/split/split_invoice", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        const status = document.getElementById("split-status");
+        if (data.success) {
+          status.textContent = "Split saved!";
+          status.style.color = "green";
+        } else if (data.warning) {
+          status.textContent = data.warning;
+          status.style.color = "orange";
+        } else {
+          status.textContent = data.error || "Failed to split.";
+          status.style.color = "red";
+        }
+      })
+      .catch(err => {
+        console.error("Split failed:", err);
+        document.getElementById("split-status").textContent = "An error occurred.";
+      });
+    });
+
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

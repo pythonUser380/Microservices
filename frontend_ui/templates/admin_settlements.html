@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin: Settlement Overview</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+ <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; }
+    h1, h2 { text-align: center; }
+    .container { max-width: 1000px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
+    button { padding: 8px 12px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+</style>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/admin_dashboard.html">Dashboard</a></li>
+        <li><a href="/settlement_history.html">Settlement Log</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container">
+    <h2>Admin: All Settlements</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Paid By</th>
+          <th>Owed By</th>
+          <th>Total Amount (€)</th>
+          <th>Settled Amount (€)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="settlement-table-body">
+        <tr><td colspan="5">Loading...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!token || !user || !user.is_admin) {
+      window.location.href = "/login";
+    }
+
+    fetch("http://localhost:5000/settlement/summary", {
+      headers: { Authorization: "Bearer " + token }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("settlement-table-body");
+      tbody.innerHTML = "";
+
+      if (!Array.isArray(data) || data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>No settlement records found.</td></tr>";
+        return;
+      }
+
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        const net = row.total_amount - row.settled_amount;
+        tr.innerHTML = `
+          <td>${row.paid_by}</td>
+          <td>${row.owed_by}</td>
+          <td>${row.total_amount.toFixed(2)}</td>
+          <td>${row.settled_amount.toFixed(2)}</td>
+          <td style="color: ${net === 0 ? 'green' : 'red'};">
+            ${net === 0 ? 'Settled' : 'Pending'}
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    })
+    .catch(err => {
+      console.error("Failed to fetch admin settlements:", err);
+      document.getElementById("settlement-table-body").innerHTML = "<tr><td colspan='5'>Error loading data.</td></tr>";
+    });
+
+    document.getElementById("logout-link").addEventListener("click", e => {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

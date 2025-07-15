@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Change Password</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Dashboard</a></li>
+        <li><a href="/profile.html">Profile</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Change Password</h2>
+    <form id="password-form">
+      <label for="new_password">New Password:</label>
+      <input type="password" id="new_password" name="new_password" required />
+
+      <label for="confirm_password">Confirm Password:</label>
+      <input type="password" id="confirm_password" name="confirm_password" required />
+
+      <button type="submit">Update Password</button>
+    </form>
+
+    <div id="status-message" style="margin-top: 1em; font-weight: bold;"></div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      window.location.href = "/login";
+    }
+
+    document.getElementById("password-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const new_password = document.getElementById("new_password").value;
+      const confirm_password = document.getElementById("confirm_password").value;
+
+      if (new_password !== confirm_password) {
+        document.getElementById("status-message").textContent = "Passwords do not match.";
+        document.getElementById("status-message").style.color = "red";
+        return;
+      }
+
+      fetch("http://localhost:5000/auth/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: JSON.stringify({ new_password, confirm_password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message) {
+          document.getElementById("status-message").textContent = data.message;
+          document.getElementById("status-message").style.color = "green";
+        } else {
+          document.getElementById("status-message").textContent = data.error || "Password update failed.";
+          document.getElementById("status-message").style.color = "red";
+        }
+      })
+      .catch(error => {
+        console.error("Password update error:", error);
+        document.getElementById("status-message").textContent = "An error occurred.";
+        document.getElementById("status-message").style.color = "red";
+      });
+    });
+
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

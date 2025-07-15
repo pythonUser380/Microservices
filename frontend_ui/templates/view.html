@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invoice Details</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <header>
+    <img src="/static/images/LOGO_SiranthaRechnunSplit.jpg" alt="Logo" class="logo" />
+    <nav>
+      <ul>
+        <li><a href="/index.html">Dashboard</a></li>
+        <li><a href="/view_invoices_month.html">My Invoices</a></li>
+        <li><a href="/balances.html">Balances</a></li>
+        <li><a href="#" id="logout-link">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Invoice Details</h2>
+
+    <div id="invoice-info">
+      <p><strong>Shop:</strong> <span id="shopName"></span></p>
+      <p><strong>Date:</strong> <span id="date"></span></p>
+      <p><strong>Address:</strong> <span id="address"></span></p>
+      <p><strong>Total:</strong> €<span id="total"></span></p>
+    </div>
+
+    <h3>Items</h3>
+    <table border="1" class="table">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th>Price (€)</th>
+          <th>Shared With</th>
+        </tr>
+      </thead>
+      <tbody id="items-table-body"></tbody>
+    </table>
+
+    <div id="settlements-section">
+      <h3>Settlement Summary</h3>
+      <ul id="settlements-list"></ul>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!token || !user) {
+      window.location.href = "/login";
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const billId = urlParams.get("billId");
+
+    if (!billId) {
+      document.body.innerHTML = "<p>Missing bill ID</p>";
+      throw new Error("No billId provided");
+    }
+
+    fetch(`http://localhost:5000/invoice/view?billId=${billId}`, {
+      headers: { "Authorization": "Bearer " + token }
+    })
+    .then(response => response.text())
+    .then(html => {
+      // replace body content with rendered HTML from backend
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(err => {
+      console.error("Error loading invoice details:", err);
+      document.body.innerHTML = "<p style='color:red;'>Failed to load invoice</p>";
+    });
+
+    document.getElementById("logout-link").addEventListener("click", function (e) {
+      e.preventDefault();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "/login";
+    });
+  </script>
+</body>
+</html>

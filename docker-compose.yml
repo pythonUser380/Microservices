@@ -1,0 +1,147 @@
+version: "3.9"
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver-db
+    environment:
+      SA_PASSWORD: "2025Online"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - db_data:/var/opt/mssql
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U testusermicro -P testusermicro -Q 'SELECT 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+
+  authservice:
+    build:
+      context: .
+      dockerfile: authservice/Dockerfile
+    container_name: auth-service
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db
+    env_file:
+      - ./authservice/.env
+    environment:
+      - FLASK_APP=authservice.app
+      - FLASK_ENV=development
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  invoiceservice:
+    build:
+      context: .
+      dockerfile: invoiceservice/Dockerfile
+    container_name: invoice-service
+    ports:
+      - "5002:5000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@db/invoicedb
+      - PYTHONPATH=/app
+    volumes:
+      - ./invoiceservice/static/uploads:/app/static/uploads
+    networks:
+      - backend
+
+  splitservice:
+    build:
+      context: .
+      dockerfile: splitservice/Dockerfile
+    container_name: split-service
+    ports:
+      - "5005:5000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@db/splitdb
+      - PYTHONPATH=/app
+    networks:
+      - backend
+
+  settlementservice:
+    build:
+      context: .
+      dockerfile: settlementservice/Dockerfile
+    container_name: settlement-service
+    ports:
+      - "5003:5000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@db/settlementdb
+      - PYTHONPATH=/app
+    networks:
+      - backend
+
+  balanceservice:
+    build:
+      context: .
+      dockerfile: balanceservice/Dockerfile
+    container_name: balance-service
+    working_dir: /app
+    volumes:
+      - ./balanceservice:/app
+    command: ["python", "app.py"]
+    ports:
+      - "5004:5000"
+    depends_on:
+      - db
+    env_file:
+      - ./balanceservice/.env
+    environment:
+      - FLASK_ENV=development
+      - PYTHONPATH=/app
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  gateway:
+    build: ./gateway
+    container_name: api-gateway
+    ports:
+      - "5000:5000"
+    depends_on:
+      - authservice
+      - invoiceservice
+      - splitservice
+      - settlementservice
+      - balanceservice
+    networks:
+      - backend
+
+  frontend_ui:
+    build: ./frontend_ui
+    container_name: frontend-ui
+    ports:
+      - "8000:5000"
+    depends_on:
+      - gateway
+    networks:
+      - backend
+
+volumes:
+  db_data:
+
+networks:
+  backend:
+    driver: bridge
