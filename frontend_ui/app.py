@@ -16,8 +16,8 @@ def home():
 def login_page():
     return render_template("login.html")
 
-@app.route("/register")
-def register_page():
+@app.route("/signup")
+def signup_page():
     return render_template("signup.html")
 
 @app.route("/dashboard")
@@ -34,10 +34,10 @@ def proxy_login():
     except requests.exceptions.RequestException:
         return jsonify({"error": "Auth service unreachable"}), 503
 
-@app.route("/auth/register", methods=["POST"])
-def proxy_register():
+@app.route("/auth/signup", methods=["POST"])
+def proxy_signup():
     try:
-        resp = requests.post(f"{AUTH_SERVICE_URL}/register", json=request.get_json())
+        resp = requests.post(f"{AUTH_SERVICE_URL}/signup", json=request.get_json())
         return (resp.content, resp.status_code, resp.headers.items())
     except requests.exceptions.RequestException:
         return jsonify({"error": "Auth service unreachable"}), 503
